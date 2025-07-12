@@ -3,6 +3,11 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html, Input, Output, State
 import requests
 import time
+from dotenv import load_dotenv
+import os
+
+# --- .env betöltése ---
+load_dotenv()
 
 # --- Színek és stílusok ---
 COLOR_DARKBLUE = "#273F4F"
@@ -36,7 +41,10 @@ input_style = {
 }
 
 # --- Currency API config ---
-EXCHANGE_API_KEY = "12b0d35977f9efec66d264d9"  # <-- Saját kulcsod
+EXCHANGE_API_KEY = os.getenv("EXCHANGE_API_KEY")  # <-- .env-ből olvassuk be
+if not EXCHANGE_API_KEY:
+    raise ValueError("Hiányzik az EXCHANGE_API_KEY környezeti változó!")
+
 EXCHANGE_BASE_URL = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_API_KEY}/latest/"
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])

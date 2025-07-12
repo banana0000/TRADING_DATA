@@ -9,6 +9,11 @@ import yfinance as yf
 from datetime import datetime
 import requests
 import time
+from dotenv import load_dotenv
+import os
+
+# --- .env betöltése ---
+load_dotenv()
 
 # --- Color palette ---
 COLOR_DARKBLUE = "#273F4F"
@@ -23,7 +28,9 @@ COLOR_RED = "#B71C1C"
 COLOR_PURPLE = "#6A1B9A"
 
 # --- Currency API config ---
-EXCHANGE_API_KEY = "12b0d35977f9efec66d264d9"  # <-- Replace with your exchangerate-api.com key
+EXCHANGE_API_KEY = os.getenv("EXCHANGE_API_KEY")  # <-- .env-ből olvassuk be
+if not EXCHANGE_API_KEY:
+    raise ValueError("Hiányzik az EXCHANGE_API_KEY környezeti változó!")
 EXCHANGE_BASE_URL = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_API_KEY}/latest/"
 
 order_months = {
@@ -191,28 +198,20 @@ app.layout = dbc.Container(
 
         # --- Inputs és dropdownok nagy gap-pel, teljes szélességben ---
         dbc.Row([
-            dbc.Col([
-                dbc.Label("Timeframe to open new position (business days)"),
-                dbc.Input(type="number", min=1, max=10, step=1, value=2, id="business-days", style=input_style)
-            ], width=4),
-            dbc.Col([
-                dbc.Label("Position size (USD)"),
-                dbc.Input(type="number", min=50, max=1000, step=50, value=500, id="position-size", style=input_style)
-            ], width=2),
-            dbc.Col([
-                dbc.Label("Ticker setup month"),
-                dcc.Dropdown(
-                    options=["All"]+order_months['Month'],
-                    value='All',
-                    clearable=False,
-                    id="ticker-setup-month",
-                    style=dropdown_style
-                )
-            ], width=3),
-            dbc.Col([
-                dbc.Label(" "),
-                dbc.Button("Simulate Trading", id="simulate-trading", style=button_green, className="w-100")
-            ], width=3),
+            dbc.Col([dbc.Label("Timeframe to open new position (business days)"),
+                     dbc.Input(type="number", min=1, max=10, step=1, value=2, id="business-days", style=input_style)], width=4),
+            dbc.Col([dbc.Label("Position size (USD)"),
+                     dbc.Input(type="number", min=50, max=1000, step=50, value=500, id="position-size", style=input_style)], width=2),
+            dbc.Col([dbc.Label("Ticker setup month"),
+                     dcc.Dropdown(
+                         options=["All"]+order_months['Month'],
+                         value='All',
+                         clearable=False,
+                         id="ticker-setup-month",
+                         style=dropdown_style
+                     )], width=3),
+            dbc.Col([dbc.Label(" "),
+                     dbc.Button("Simulate Trading", id="simulate-trading", style=button_green, className="w-100")], width=3),
         ], className="mb-4", style={"gap": "32px", "justifyContent": "space-between"}),
 
         dbc.Row([], id='cards-row', justify="center", className="my-3"),
@@ -576,10 +575,7 @@ def trading_simulation(_, business_days, setup_month, position_size):
                 }
     executed_trades_df = pd.DataFrame(executed_trades_log)
     if not executed_trades_df.empty:
-        executed_trades_df = executed_trades_df[[
-            'Date', 'Ticker', 'Action', 'Price',
-            'Shares_Traded', 'Position_Shares_Remaining_After_Trade'
-        ]]
+        executed_trades_df = executed_trades_df[[ 'Date', 'Ticker', 'Action', 'Price', 'Shares_Traded', 'Position_Shares_Remaining_After_Trade' ]]
         executed_trades_df.sort_values(by=['Date', 'Ticker'], inplace=True)
         executed_trades_df.reset_index(drop=True, inplace=True)
     executed_trades_df['Standardized_Multiplier'] = np.nan
