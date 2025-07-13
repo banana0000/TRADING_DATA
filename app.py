@@ -882,4 +882,4 @@ def build_graphs(stored_data, position_type, position_size):
     return fig_trades_month, fig_trades_action, fig_closed, fig_closed_trades_action, fig_pnl, cards
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
