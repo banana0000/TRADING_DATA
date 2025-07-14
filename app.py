@@ -278,7 +278,7 @@ app.layout = dbc.Container(
         dbc.Row([
             dbc.Col(
                 dbc.Button(
-                    "Show Trades Table",
+                    "Toggle Trades Table",
                     id="toggle-table-btn",
                     style=button_darkgray,
                     className="mb-3"
@@ -644,7 +644,7 @@ def toggle_table_visibility(n_clicks, is_visible):
         return no_update, no_update
 
     new_visibility = not is_visible
-    button_text = "Hide Trades Table" if new_visibility else "Show Trades Table"
+    button_text = "Toggle Trades Table" if new_visibility else "Toggle Trades Table"
     return new_visibility, button_text
 
 # --- AG Grid quick filter (globális kereső) ---
