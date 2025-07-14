@@ -53,13 +53,17 @@ button_darkgray = {
     "background": COLOR_DARKGRAY,
     "color": "#fff",
     "fontWeight": "bold",
-    "boxShadow": f"0 2px 8px {COLOR_DARKGRAY}88"
+    "boxShadow": f"0 2px 8px {COLOR_DARKGRAY}88",
+    "border": "none",
+    "borderRadius": "50px"
 }
 button_green = {
     "background": COLOR_GREEN,
     "color": "#fff",
     "fontWeight": "bold",
-    "boxShadow": f"0 2px 8px {COLOR_DARKGRAY}88"
+    "boxShadow": f"0 2px 8px {COLOR_DARKGRAY}88",
+    "border": "none",
+    "borderRadius": "50px"
 }
 
 dropdown_style = {
@@ -98,20 +102,69 @@ app.layout = dbc.Container(
             }
         ),
         html.Br(),
-        html.Br(),
 
-        # --- Open Calculator Button ---
-        dbc.Row([
-            dbc.Col(
-                dbc.Button(
-                    "Open Currency Calculator",
-                    id="open-cc-modal-btn",
-                    style=button_darkgray,
-                    className="mb-3"
+        # --- MODIFIED: Controls split into two rows ---
+        # Row 1: General Buttons
+        dbc.Row(
+            [
+                dbc.Col(
+                    dbc.Button("Currency Calculator", id="open-cc-modal-btn", style=button_darkgray),
+                    width="auto"
                 ),
-                width=3
-            ),
-        ], justify="center"),
+                dbc.Col(
+                    dbc.Button("Past Ticker Prices", id="historical-pricing", style=button_darkgray),
+                    width="auto"
+                ),
+                dbc.Col(
+                    dbc.Button("Most Recent Ticker Prices", id="recent-pricing", style=button_darkgray),
+                    width="auto"
+                ),
+            ],
+            justify="center",
+            className="g-3 mb-4"
+        ),
+
+        # Row 2: Simulation Controls
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dbc.Label("Timeframe (days)"),
+                        dbc.Input(type="number", min=1, max=10, step=1, value=2, id="business-days", style={**input_style, "width": "180px"})
+                    ],
+                    width="auto"
+                ),
+                dbc.Col(
+                    [
+                        dbc.Label("Position size (USD)"),
+                        dbc.Input(type="number", min=50, max=1000, step=50, value=500, id="position-size", style={**input_style, "width": "180px"})
+                    ],
+                    width="auto"
+                ),
+                dbc.Col(
+                    [
+                        dbc.Label("Setup month"),
+                        dcc.Dropdown(
+                            options=["All"] + order_months['Month'],
+                            value='All',
+                            clearable=False,
+                            id="ticker-setup-month",
+                            style={**dropdown_style, "width": "180px"}
+                        )
+                    ],
+                    width="auto",
+                ),
+                dbc.Col(
+                    dbc.Button("Simulate Trading", id="simulate-trading", style=button_green),
+                    width="auto"
+                ),
+            ],
+            justify="center",
+            align="end",
+            className="g-3 mb-4"
+        ),
+
+        dbc.Alert(id="alert-pricing", duration=5000, is_open=False),
 
         # --- Modal for calculator with input and result ---
         dbc.Modal(
@@ -180,40 +233,8 @@ app.layout = dbc.Container(
             id="cc-modal",
             is_open=False,
         ),
-        html.Br(),
-        html.Br(),
 
-        # --- Dashboard Controls and Content ---
-        dbc.Row([
-            dbc.Col(
-                dbc.Button("Past Ticker Prices", id="historical-pricing", style=button_darkgray, className="mb-3"),
-                width=3
-            ),
-            dbc.Col(
-                dbc.Button("Most Recent Ticker Prices", id="recent-pricing", style=button_darkgray, className="mb-3"),
-                width=3
-            ),
-        ], justify="center"),
-        dbc.Alert(id="alert-pricing", duration=5000, is_open=False),
-
-        # --- Inputs és dropdownok nagy gap-pel, teljes szélességben ---
-        dbc.Row([
-            dbc.Col([dbc.Label("Timeframe to open new position (business days)"),
-                     dbc.Input(type="number", min=1, max=10, step=1, value=2, id="business-days", style=input_style)], width=4),
-            dbc.Col([dbc.Label("Position size (USD)"),
-                     dbc.Input(type="number", min=50, max=1000, step=50, value=500, id="position-size", style=input_style)], width=2),
-            dbc.Col([dbc.Label("Ticker setup month"),
-                     dcc.Dropdown(
-                         options=["All"]+order_months['Month'],
-                         value='All',
-                         clearable=False,
-                         id="ticker-setup-month",
-                         style=dropdown_style
-                     )], width=3),
-            dbc.Col([dbc.Label(" "),
-                     dbc.Button("Simulate Trading", id="simulate-trading", style=button_green, className="w-100")], width=3),
-        ], className="mb-4", style={"gap": "32px", "justifyContent": "space-between"}),
-
+        # --- Dashboard Content ---
         dbc.Row([], id='cards-row', justify="center", className="my-3"),
         dbc.Row([
             dbc.Col(dbc.Spinner(dcc.Graph(id="profit_n_loss", config={"displayModeBar": False},
@@ -258,16 +279,7 @@ app.layout = dbc.Container(
             dbc.Col(
                 dbc.Button(
                     "Show Trades Table",
-                    id="show-table-btn",
-                    style=button_darkgray,
-                    className="mb-3"
-                ),
-                width="auto"
-            ),
-            dbc.Col(
-                dbc.Button(
-                    "Hide Trades Table",
-                    id="hide-table-btn",
+                    id="toggle-table-btn",
                     style=button_darkgray,
                     className="mb-3"
                 ),
@@ -277,7 +289,7 @@ app.layout = dbc.Container(
         dcc.Store(id="table-visible-store", data=False),
     ],
     fluid=True,
-    style={"paddingBottom": "40px"}
+    style={"padding": "0 50px 40px 50px"}
 )
 
 # --- Modal open/close callback ---
@@ -619,23 +631,21 @@ def trading_simulation(_, business_days, setup_month, position_size):
     executed_trades_df.to_csv("standardized-executed-trades.csv", index=False)
     return executed_trades_df.to_dict('records')
 
-# --- Show/hide grid logic ---
+# --- Show/hide grid logic with a single button ---
 @callback(
     Output("table-visible-store", "data"),
-    [Input("show-table-btn", "n_clicks"), Input("hide-table-btn", "n_clicks")],
-    [State("table-visible-store", "data")],
-    prevent_initial_call=True
+    Output("toggle-table-btn", "children"),
+    Input("toggle-table-btn", "n_clicks"),
+    State("table-visible-store", "data"),
+    prevent_initial_call=True,
 )
-def toggle_table(show_click, hide_click, visible):
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        return visible
-    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    if trigger_id == "show-table-btn":
-        return True
-    elif trigger_id == "hide-table-btn":
-        return False
-    return visible
+def toggle_table_visibility(n_clicks, is_visible):
+    if n_clicks is None:
+        return no_update, no_update
+
+    new_visibility = not is_visible
+    button_text = "Hide Trades Table" if new_visibility else "Show Trades Table"
+    return new_visibility, button_text
 
 # --- AG Grid quick filter (globális kereső) ---
 @callback(
@@ -706,8 +716,11 @@ def show_grid(visible, quick_filter, stored_data):
 )
 def build_graphs(stored_data, position_type, position_size):
     if stored_data is None:
-        return no_update
+        return no_update, no_update, no_update, no_update, no_update, no_update
     df = pd.DataFrame(stored_data)
+    if df.empty:
+        return no_update, no_update, no_update, no_update, no_update, no_update
+
     positions_opened = df[(df['Action'] == 'Initial Buy') | (df['Action'] == 'Initial Short')]
     trades_count = positions_opened.groupby('Month').size().reset_index(name='Trade Count')
     fig_trades_month = px.bar(
@@ -797,12 +810,12 @@ def build_graphs(stored_data, position_type, position_size):
             'Total P&L($)': realized_pnl + unrealized_pnl
         })
     summary_df = pd.DataFrame(pnl_summary)
-    total_realized_pnl = summary_df['Realized P&L($)'].sum()
-    total_unrealized_pnl = summary_df['Unrealized P&L($)'].sum()
-    total_pnl = summary_df['Total P&L($)'].sum()
+    total_realized_pnl = summary_df['Realized P&L($)'].sum() if not summary_df.empty else 0
+    total_unrealized_pnl = summary_df['Unrealized P&L($)'].sum() if not summary_df.empty else 0
+    total_pnl = summary_df['Total P&L($)'].sum() if not summary_df.empty else 0
     total_capital_deployed = len(position_chosen_df) * position_size
 
-    # Kártyák: fehér háttér, csak a Realized zöld
+    # --- MODIFIED: Added className="text-center" to all cards ---
     c_cap_deplyd = dbc.Card(
         [
             dbc.CardBody(
@@ -813,7 +826,8 @@ def build_graphs(stored_data, position_type, position_size):
                 ]
             ),
         ],
-        style={"background": "#fff", "color": "#222"}
+        style={"background": "#fff", "color": "#222"},
+        className="text-center"
     )
     c_unrlzd_prft = dbc.Card(
         [
@@ -825,7 +839,8 @@ def build_graphs(stored_data, position_type, position_size):
                 ]
             ),
         ],
-        style={"background": "#fff", "color": "#222"}
+        style={"background": "#fff", "color": "#222"},
+        className="text-center"
     )
     c_rlzd_prft = dbc.Card(
         [
@@ -837,7 +852,8 @@ def build_graphs(stored_data, position_type, position_size):
                 ]
             ),
         ],
-        style={"background": COLOR_GREEN, "color": "#fff"}
+        style={"background": COLOR_DARKBLUE, "color": "#fff"},
+        className="text-center"
     )
     c_proft_dlr = dbc.Card(
         [
@@ -849,7 +865,8 @@ def build_graphs(stored_data, position_type, position_size):
                 ]
             ),
         ],
-        style={"background": "#fff", "color": "#222"}
+        style={"background": "#fff", "color": "#222"},
+        className="text-center"
     )
     c_proft_pct = dbc.Card(
         [
@@ -857,11 +874,12 @@ def build_graphs(stored_data, position_type, position_size):
                 [
                     html.H5("Total Net P&L (%)", className="card-title"),
                     html.Hr(),
-                    html.P(f"{(total_pnl / total_capital_deployed) * 100:.2f}%", className="card-text"),
+                    html.P(f"{(total_pnl / total_capital_deployed) * 100:.2f}%" if total_capital_deployed > 0 else "0.00%", className="card-text"),
                 ]
             ),
         ],
-        style={"background": "#fff", "color": "#222"}
+        style={"background": "#fff", "color": "#222"},
+        className="text-center"
     )
     cards = [
         dbc.Col(c_cap_deplyd, width=2),
@@ -882,4 +900,4 @@ def build_graphs(stored_data, position_type, position_size):
     return fig_trades_month, fig_trades_action, fig_closed, fig_closed_trades_action, fig_pnl, cards
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
