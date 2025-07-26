@@ -899,5 +899,7 @@ def build_graphs(stored_data, position_type, position_size):
     fig_pnl.update_layout(plot_bgcolor="#fff", paper_bgcolor="#fff", margin=dict(l=20, r=20, t=20, b=20))
     return fig_trades_month, fig_trades_action, fig_closed, fig_closed_trades_action, fig_pnl, cards
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8050))  # 8050 az alapértelmezett, de Render felülírja
+    app.run(host="0.0.0.0", port=port)
